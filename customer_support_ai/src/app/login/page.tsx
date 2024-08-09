@@ -8,6 +8,7 @@ import {
   ThemeProvider,
   createTheme,
   Avatar,
+  Link as MuiLink,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import NextLink from "next/link";
@@ -170,9 +171,14 @@ function Login() {
                 align="center"
                 sx={{ mt: 2 }}
               >
-                <NextLink href="/signup" passHref>
-                  Don't have an account? Sign up
-                </NextLink>
+                Don't have an account?{" "}
+                <MuiLink
+                  component={NextLink}
+                  href="/signup"
+                  color="primary.main"
+                >
+                  Sign up
+                </MuiLink>
               </Typography>
             </Box>
           </Box>
