@@ -14,6 +14,8 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "../../../firebase";
 
 const darkTheme = createTheme({
   palette: {
@@ -74,8 +76,22 @@ function Signup() {
   const router = useRouter();
 
   const handleSignup = (e: FormEvent<HTMLFormElement>) => {
-    //Complete function later;
-    console.log("handle sign up function called");
+    e.preventDefault();
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        // Update the user's display name
+        updateProfile(user, { displayName: fullName })
+          .then(() => {
+            router.push("/");
+          })
+          .catch((error) => {
+            setError(error.message);
+          });
+      })
+      .catch((error) => {
+        setError(error.message);
+      });
   };
 
   return (
