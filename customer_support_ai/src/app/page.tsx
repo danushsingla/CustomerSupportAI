@@ -9,6 +9,9 @@ import {
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import { useState } from "react";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { auth } from "../..//firebase";
+import { useRouter } from "next/navigation";
 
 // Define the dark theme to match the login and signup pages
 const darkTheme = createTheme({
@@ -73,6 +76,16 @@ export default function Home() {
   ]);
 
   const [message, setMessage] = useState<string>("");
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      router.push("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -187,6 +200,23 @@ export default function Home() {
           >
             Send
           </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{
+              textTransform: "none",
+              bgcolor: "#F56565", // Red color for logout button
+              padding: "6px 10px", // Adjust padding to align the icon more inside
+              "& .MuiButton-startIcon": {
+                marginRight: "4px", // Reduce the space between the icon and the text
+              },
+              "&:hover": {
+                bgcolor: "#C53030",
+              },
+            }}
+          ></Button>
         </Stack>
       </Box>
     </ThemeProvider>
