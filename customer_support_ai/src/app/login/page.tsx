@@ -14,6 +14,8 @@ import { motion } from "framer-motion";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../../firebase";
 
 const darkTheme = createTheme({
   palette: {
@@ -73,8 +75,15 @@ function Login() {
   const [password, setPassword] = useState<string>("");
 
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
-    // set up login later
-    console.log("handle login function called");
+    e.preventDefault();
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Redirect to home page after successful login
+        router.push("/");
+      })
+      .catch((error) => {
+        setError(error.message);
+      });
   };
 
   return (
