@@ -12,6 +12,7 @@ import { useState } from "react";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { auth } from "../..//firebase";
 import { useRouter } from "next/navigation";
+import { withAuth } from "@/components/auth/withAuth";
 
 // Define the dark theme to match the login and signup pages
 const darkTheme = createTheme({
@@ -67,7 +68,7 @@ interface MessageType {
   content: string;
 }
 
-export default function Home() {
+function Home() {
   const [messages, setMessages] = useState<MessageType[]>([
     {
       role: "assistant",
@@ -222,3 +223,5 @@ export default function Home() {
     </ThemeProvider>
   );
 }
+
+export default withAuth(Home);
