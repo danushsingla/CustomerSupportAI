@@ -1,61 +1,89 @@
-import { BedrockRuntimeClient, InvokeModelWithResponseStreamCommand } from "@aws-sdk/client-bedrock-runtime";
-import { fromEnv } from "@aws-sdk/credential-providers";
+import { InvokeModelWithResponseStreamCommand, BedrockRuntimeClient } from "@aws-sdk/client-bedrock-runtime";
+import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { NextResponse } from "next/server";
-// import { env } from "~/env";
 
 const client = new BedrockRuntimeClient({
-    region: process.env.AWS_REGION,
-    credentials: fromEnv(), // reads AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY from env
-})
+    region: 'us-east-1',
+});
 
-// Embed the promp in Llama 3's instruction format
-// https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-3/ 
+const secretsManagerClient = new SecretsManagerClient({ region: 'us-east-1' });
+
+// Function to retrieve a secret from AWS Secrets Manager
+async function getSecret(secretName: string): Promise<any> {
+    try {
+        const command = new GetSecretValueCommand({ SecretId: secretName });
+        const response = await secretsManagerClient.send(command);
+        const secret = response.SecretString;
+        if (secret) {
+            return JSON.parse(secret);
+        } else {
+            throw new Error('Secret string is empty');
+        }
+    } catch (error) {
+        console.error(`Error retrieving secret: ${error}`);
+        throw error;
+    }
+}
+
+const secretArn = 'modelArn'; // Replace with your secret ARN
 
 export async function POST(req: Request) {
     try {
-        const { user_message } = await req.json() as { user_message: string};
-        const modelId = 'meta.llama3-8b-instruct-v1:0'; // depending on the model, the region can change
+        // Retrieve secrets from AWS Secrets Manager
+        const secrets = await getSecret(secretArn);
+        const modelArn = secrets.modelArn;
+        const kbId = secrets.kb_id;
+
+        if (!modelArn || !kbId) {
+            throw new Error('Secrets not initialized');
+        }
+
+        const messages = await req.json() as { role: string, content: string }[];
+        const user_message = messages[messages.length - 1].content;
 
         const system_prompt = "You are a helpful AI assistant.";
+        const prompt = `Human: ${user_message}\nAssistant:`; // Add the "Human:" prefix to the user message
 
-        const prompt = `
-            <|begin_of_text|><|start_header_id|>system<|end_header_id|>
-            ${system_prompt}
-            <|eot_id|>
-            
-            <|start_header_id|>user<|end_header_id|>
-            ${user_message}
-            <|eot_id|>
-
-            <|start_header_id|>assistant<|end_header_id|>
-            `;
-
-        const request = {
-            prompt,
-            max_gen_len: 512,
-            temperature: 0.5,
-            top_p: 0.9,
+        const requestPayload = {
+            "prompt": prompt,
+            "max_tokens_to_sample": 512,
+            "temperature": 0.5,
+            "top_p": 0.9,
         };
 
         const responseStream = await client.send(
             new InvokeModelWithResponseStreamCommand({
                 contentType: "application/json",
-                body: JSON.stringify(request),
-                modelId,
+                body: JSON.stringify(requestPayload),
+                modelId: modelArn, // Use the model ARN retrieved from secrets
             }),
         );
 
         const readableStream = new ReadableStream({
             async start(controller) {
-                if (responseStream.body) {
-                    for await (const event of responseStream.body) {
-                        const chunk = JSON.parse(new TextDecoder().decode(event.chunk?.bytes)) as { generation: string };
-                        if (chunk.generation) {
-                            controller.enqueue(chunk.generation);
+                let responseText = '';
+                try {
+                    for await (const event of responseStream.body!) {
+                        const chunk = JSON.parse(new TextDecoder().decode(event.chunk?.bytes)) as { type: string, completion: string, stop_reason?: string, stop?: string };
+
+                        if (chunk.completion) {
+                            responseText += chunk.completion;
+                        }
+
+                        // Check if the stop reason is met and stop the stream
+                        if (chunk.stop_reason === 'stop_sequence') {
+                            controller.enqueue(responseText);
+                            controller.close();
+                            return;
                         }
                     }
+                    // If no stop_sequence was encountered, return the aggregated text
+                    controller.enqueue(responseText);
+                    controller.close();
+                } catch (error) {
+                    console.error('Error reading from response stream:', error);
+                    controller.error(error);
                 }
-                controller.close();
             },
         });
 
@@ -64,7 +92,6 @@ export async function POST(req: Request) {
         });
     } catch (error) {
         console.error('Error processing request:', error);
-        return NextResponse.json({ error: 'Error proccessing your request' }, { status: 500 });
+        return NextResponse.json({ error: 'Error processing your request' }, { status: 500 });
     }
-    
 }

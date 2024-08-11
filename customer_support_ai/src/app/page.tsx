@@ -88,9 +88,46 @@ function Home() {
     }
   };
 
-  const sendMessage = async () => {
-    console.log("implement send message function");
-  };
+  const sendMessage = async() => {
+    setMessage('');
+    setMessages((messages) => [
+      ...messages,
+      {
+        role: 'user', content: message},
+        {role: 'assistant', content: ''},
+    ])
+    const response = fetch('/aws', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([...messages, {role: 'user', content: message}]),
+    }).then(async (res) => {
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+
+      let result = ''
+      // @ts-ignore
+      return reader.read().then(function processText({done, value}) {
+        if (done) {
+          return result
+        }
+        const text = decoder.decode(value || new Int8Array(), {stream: true})
+        setMessages((messages) => {
+          let lastMessage = messages[messages.length - 1]
+          let otherMessages = messages.slice(0, messages.length - 1)
+          return [
+            ...otherMessages,
+            {
+              ...lastMessage,
+              content: lastMessage.content + text,
+            },
+          ]
+        })
+        return reader.read().then(processText)
+      })
+    })
+  }
 
   return (
     <ThemeProvider theme={darkTheme}>
