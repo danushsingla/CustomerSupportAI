@@ -103,46 +103,47 @@ export async function POST(req: Request) {
         const resp = await getContext(user_message);
 
         console.log(resp);
+        return new NextResponse(resp)
+        
+        // const responseStream = await client.send(
+        //     new InvokeModelWithResponseStreamCommand({
+        //         contentType: "application/json",
+        //         body: JSON.stringify(requestPayload),
+        //         modelId: modelArn, // Use the model ARN retrieved from secrets
+        //     }),
+        // );
 
-        const responseStream = await client.send(
-            new InvokeModelWithResponseStreamCommand({
-                contentType: "application/json",
-                body: JSON.stringify(requestPayload),
-                modelId: modelArn, // Use the model ARN retrieved from secrets
-            }),
-        );
+        // const readableStream = new ReadableStream({
+        //     async start(controller) {
+        //         let responseText = '';
+        //         try {
+        //             for await (const event of responseStream.body!) {
+        //                 const chunk = JSON.parse(new TextDecoder().decode(event.chunk?.bytes)) as { type: string, completion: string, stop_reason?: string, stop?: string };
 
-        const readableStream = new ReadableStream({
-            async start(controller) {
-                let responseText = '';
-                try {
-                    for await (const event of responseStream.body!) {
-                        const chunk = JSON.parse(new TextDecoder().decode(event.chunk?.bytes)) as { type: string, completion: string, stop_reason?: string, stop?: string };
+        //                 if (chunk.completion) {
+        //                     responseText += chunk.completion;
+        //                 }
 
-                        if (chunk.completion) {
-                            responseText += chunk.completion;
-                        }
+        //                 // Check if the stop reason is met and stop the stream
+        //                 if (chunk.stop_reason === 'stop_sequence') {
+        //                     controller.enqueue(responseText);
+        //                     controller.close();
+        //                     return;
+        //                 }
+        //             }
+        //             // If no stop_sequence was encountered, return the aggregated text
+        //             controller.enqueue(responseText);
+        //             controller.close();
+        //         } catch (error) {
+        //             console.error('Error reading from response stream:', error);
+        //             controller.error(error);
+        //         }
+        //     },
+        // });
 
-                        // Check if the stop reason is met and stop the stream
-                        if (chunk.stop_reason === 'stop_sequence') {
-                            controller.enqueue(responseText);
-                            controller.close();
-                            return;
-                        }
-                    }
-                    // If no stop_sequence was encountered, return the aggregated text
-                    controller.enqueue(responseText);
-                    controller.close();
-                } catch (error) {
-                    console.error('Error reading from response stream:', error);
-                    controller.error(error);
-                }
-            },
-        });
-
-        return new NextResponse(readableStream, {
-            headers: { 'Content-Type': 'text/event-stream' },
-        });
+        // return new NextResponse(readableStream, {
+        //     headers: { 'Content-Type': 'text/event-stream' },
+        // });
     } catch (error) {
         console.error('Error processing request:', error);
         return NextResponse.json({ error: 'Error processing your request' }, { status: 500 });
