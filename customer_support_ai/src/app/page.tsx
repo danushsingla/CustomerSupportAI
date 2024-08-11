@@ -81,7 +81,7 @@ function Home() {
 
   const handleLogout = async () => {
     try {
-      await auth.signOut();
+      await auth!.signOut();
       router.push("/login");
     } catch (error) {
       console.error("Error logging out:", error);

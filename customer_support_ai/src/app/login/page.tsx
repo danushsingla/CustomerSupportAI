@@ -76,7 +76,7 @@ function Login() {
 
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    signInWithEmailAndPassword(auth, email, password)
+    signInWithEmailAndPassword(auth!, email, password)
       .then((userCredential) => {
         // Redirect to home page after successful login
         router.push("/");

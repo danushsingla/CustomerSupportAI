@@ -10,20 +10,24 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock": "^3.624.0",
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.625.0",
     "@aws-sdk/client-bedrock-runtime": "^3.624.0",
     "@aws-sdk/client-secrets-manager": "^3.624.0",
     "@aws-sdk/credential-providers": "^3.624.0",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
+    "@firebase/auth": "^1.7.6",
+    "@firebase/firestore": "^4.6.5",
     "@mui/icons-material": "^5.16.6",
     "@mui/material": "^5.16.6",
-    "firebase": "^10.12.5",
-    "framer-motion": "^11.3.24",
+    "auth": "^1.1.1",
     "aws": "^0.0.3-2",
     "aws-sdk": "^2.1672.0",
+    "firebase": "^10.12.5",
+    "framer-motion": "^11.3.24",
     "next": "14.2.5",
-    "react": "^18",
-    "react-dom": "^18"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^20",

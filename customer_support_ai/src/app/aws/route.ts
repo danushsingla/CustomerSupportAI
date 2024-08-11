@@ -1,10 +1,13 @@
 import { InvokeModelWithResponseStreamCommand, BedrockRuntimeClient } from "@aws-sdk/client-bedrock-runtime";
+import { BedrockAgentRuntimeClient, RetrieveAndGenerateCommand } from '@aws-sdk/client-bedrock-agent-runtime';
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { NextResponse } from "next/server";
 
 const client = new BedrockRuntimeClient({
     region: 'us-east-1',
 });
+
+const bedrockAgentRuntimeclient = new BedrockAgentRuntimeClient({ region: 'us-east-1' });
 
 const secretsManagerClient = new SecretsManagerClient({ region: 'us-east-1' });
 
@@ -26,6 +29,52 @@ async function getSecret(secretName: string): Promise<any> {
 }
 
 const secretArn = 'modelArn'; // Replace with your secret ARN
+
+interface RetrieveAndGenerateParams {
+    input: {
+        text: string;
+    };
+    retrieveAndGenerateConfiguration: {
+        type: 'KNOWLEDGE_BASE';
+        knowledgeBaseConfiguration: {
+            knowledgeBaseId: string;
+            modelArn: string;
+        };
+    };
+}
+
+async function getContext(query: string): Promise<string> {
+    try{
+        const secrets = await getSecret(secretArn);
+        const modelArn = secrets.modelArn;
+        const kbId = secrets.kb_id;
+
+        const params: RetrieveAndGenerateParams = {
+            input: {
+                text: query,
+            },
+            retrieveAndGenerateConfiguration: {
+                type: 'KNOWLEDGE_BASE',
+                knowledgeBaseConfiguration: {
+                    knowledgeBaseId: kbId,
+                    modelArn: modelArn,
+                }
+            }
+        };
+
+        const command = new RetrieveAndGenerateCommand(params);
+        const response = await bedrockAgentRuntimeclient.send(command);
+        if (response.output && response.output.text) {
+            return response.output.text;
+        } else {
+            throw new Error('Response is missing output text');
+        }
+    }
+    catch (error) {
+        console.error('Error retrieving context:', error);
+        throw error;
+    }
+}
 
 export async function POST(req: Request) {
     try {
@@ -50,6 +99,10 @@ export async function POST(req: Request) {
             "temperature": 0.5,
             "top_p": 0.9,
         };
+
+        const resp = await getContext(user_message);
+
+        console.log(resp);
 
         const responseStream = await client.send(
             new InvokeModelWithResponseStreamCommand({
