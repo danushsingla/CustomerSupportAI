@@ -88,6 +88,10 @@ function Home() {
     }
   };
 
+  const sendMessage = async () => {
+    console.log("implement send message function");
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <Box
@@ -155,6 +159,12 @@ function Home() {
             fullWidth
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
             InputLabelProps={{
               sx: {
                 "&.MuiFormLabel-filled, &.Mui-focused": {
@@ -184,13 +194,7 @@ function Home() {
             variant="contained"
             color="primary"
             startIcon={<SendIcon />}
-            onClick={() => {
-              // Handle sending message
-              if (message.trim()) {
-                setMessages([...messages, { role: "user", content: message }]);
-                setMessage("");
-              }
-            }}
+            onClick={sendMessage}
             sx={{
               textTransform: "none",
               bgcolor: "primary.main",
